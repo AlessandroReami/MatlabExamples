@@ -1,0 +1,44 @@
+function [x, iter, resvec, flag] = mygmres (A, b, tol, maxit, x0 )
+% funziona ma ci mete troppo a calcolare, circa 10 volte quello di gmres
+
+r=b-A*x0;
+k=0;
+rho=norm(r);
+beta=rho;
+v=(1/beta)*r;
+
+norm_b=norm(b);
+v_vec=[v, NaN(size(A,1),maxit)];
+resvec=[rho;NaN(maxit,1)];
+flag=0;
+H=zeros(maxit+1,maxit);
+
+
+while rho>tol*norm_b    &&    k<20 %k<maxit
+    k=k+1;
+    v_vec(:,k+1)=A*v_vec(:,k);
+    for j=1:k
+        H(j,k)=v_vec(:,k+1).'*v_vec(:,j);
+        v_vec(:,k+1)=v_vec(:,k+1)-H(j,k)*v_vec(:,j);
+    end
+    H(k+1,k)=norm(v_vec(:,k+1));
+    if H(k+1,k)==0
+        flag=-1;
+        break
+    else
+        v_vec(:,k+1)=(1/H(k+1,k))*v_vec(:,k+1);
+        [Q,R]=qr(H(1:k+1,1:k));
+        %Q
+        rho=abs(beta*Q(1,k+1));
+        resvec(k+1)=rho;
+        k
+    end
+end
+%[Q,R]=qr(H(1:k+1,1:k));
+y=R(1:k,:)\(beta*Q(1,1:k).');
+x=x0+v_vec(:,1:k)*y;
+
+resvec=resvec(1:k+1);
+iter=k;
+
+
